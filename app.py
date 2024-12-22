@@ -16,6 +16,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, SelectField, DateField, FloatField
 from wtforms.validators import DataRequired, Email, EqualTo
 from sqlalchemy.exc import IntegrityError
+from translations import translations
 
 load_dotenv()
 
@@ -29,6 +30,8 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{os.getenv('MYSQL_USER')}:{os.getenv('MYSQL_PASSWORD')}@{os.getenv('MYSQL_HOST')}:{os.getenv('MYSQL_PORT')}/{os.getenv('MYSQL_DATABASE')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
+app.config['CURRENCY_SYMBOL'] = '€'
 
 # Ensure upload directory exists
 if not os.path.exists(UPLOAD_FOLDER):
@@ -273,7 +276,14 @@ def load_user(user_id):
 def nl2br(value):
     return value.replace('\n', '<br>')
 
+def _(text):
+    return translations.get(text, text)
+
+def format_currency(amount):
+    return f"{amount:.2f} €"
+
 app.jinja_env.filters['nl2br'] = nl2br
+app.jinja_env.globals.update(_=_, format_currency=format_currency)
 
 @app.route('/')
 def index():
