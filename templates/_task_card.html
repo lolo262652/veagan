@@ -1,0 +1,38 @@
+<div class="card mb-2 task-card" data-id="{{ task.id }}">
+    <div class="card-body">
+        <h5 class="card-title">{{ task.title }}</h5>
+        {% if task.description %}
+        <p class="card-text">{{ task.description }}</p>
+        {% endif %}
+        <div class="task-info">
+            {% if task.category %}
+            <span class="badge bg-info">{{ task.category.name }}</span>
+            {% endif %}
+            <span class="badge bg-{{ {'low': 'success', 'medium': 'warning', 'high': 'danger'}[task.priority|default('medium')] }}">{{ {'low': 'Basse', 'medium': 'Moyenne', 'high': 'Haute'}[task.priority|default('medium')] }}</span>
+            {% if task.due_date %}
+            <span class="badge bg-secondary">{{ task.due_date.strftime('%d/%m/%Y') }}</span>
+            {% endif %}
+            {% if task.assignee %}
+            <span class="badge bg-secondary">{{ task.assignee.username }}</span>
+            {% endif %}
+            {% if task.estimated_hours %}
+            <span class="badge bg-secondary">{{ task.estimated_hours }}h estimées</span>
+            {% endif %}
+        </div>
+        <div class="task-actions mt-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="editTask({{ task.id }})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.id }})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="task-footer mt-2">
+            <div class="task-info">
+                <small class="text-muted">
+                    Créée le {{ task.created_at.strftime('%d/%m/%Y') }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

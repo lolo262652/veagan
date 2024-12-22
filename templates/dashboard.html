@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Tableau de bord</h2>
+
+    <!-- Première ligne : KPIs principaux -->
+    <div class="row mb-4">
+        <!-- Clients -->
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Clients</h5>
+                    <h2 class="display-4">{{ total_clients }}</h2>
+                    <p class="mb-0">
+                        <span class="badge bg-light text-primary">+{{ new_clients_this_month }}</span>
+                        ce mois
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fournisseurs -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Fournisseurs</h5>
+                    <h2 class="display-4">{{ total_suppliers }}</h2>
+                    <p class="mb-0">
+                        <span class="badge bg-light text-success">{{ active_suppliers }}</span>
+                        actifs
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factures -->
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Factures</h5>
+                    <h2 class="display-4">{{ total_invoices }}</h2>
+                    <p class="mb-0">
+                        <span class="badge bg-light text-info">{{ unpaid_invoices }}</span>
+                        en attente
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Montant total -->
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Chiffre d'affaires</h5>
+                    <h2 class="display-4">{{ "%.2f"|format(total_amount) }}€</h2>
+                    <p class="mb-0">
+                        <span class="badge bg-light text-warning">{{ "%.2f"|format(amount_this_month) }}€</span>
+                        ce mois
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième ligne -->
+    <div class="row">
+        <!-- Top 5 clients -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top 5 Clients</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Nombre de factures</th>
+                                    <th>Montant total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for client, amount, count in top_clients %}
+                                <tr>
+                                    <td>{{ client.name }}</td>
+                                    <td>{{ count }}</td>
+                                    <td>{{ "%.2f"|format(amount) }}€</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factures impayées -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Factures impayées</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3>{{ unpaid_invoices }}</h3>
+                        <h4 class="text-danger">{{ "%.2f"|format(unpaid_amount) }}€</h4>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        {% if total_amount > 0 %}
+                        <div class="progress-bar bg-danger" role="progressbar" 
+                             style="width: {{ (unpaid_amount / total_amount * 100)|round }}%">
+                            {{ (unpaid_amount / total_amount * 100)|round }}%
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vous pouvez ajouter des graphiques Chart.js ici si nécessaire
+});
+</script>
+{% endblock %}

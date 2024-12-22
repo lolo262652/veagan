@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestion des tâches</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#taskModal">
+            <i class="bi bi-plus-circle"></i> Nouvelle tâche
+        </button>
+    </div>
+
+    <div class="row">
+        <!-- Colonne "À faire" -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    À faire <span class="badge bg-light text-dark todo-count">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="task-list" data-status="todo">
+                        {% for task in tasks if task.status == 'todo' %}
+                            {% include '_task_card.html' %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne "En cours" -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    En cours <span class="badge bg-light text-dark in-progress-count">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="task-list" data-status="in_progress">
+                        {% for task in tasks if task.status == 'in_progress' %}
+                            {% include '_task_card.html' %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne "Terminé" -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    Terminé <span class="badge bg-light text-dark done-count">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="task-list" data-status="done">
+                        {% for task in tasks if task.status == 'done' %}
+                            {% include '_task_card.html' %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter/éditer une tâche -->
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle tâche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Titre</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category_id" class="form-label">Catégorie</label>
+                        <select class="form-select" id="category_id" name="category_id">
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Priorité</label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="low">Basse</option>
+                            <option value="medium" selected>Moyenne</option>
+                            <option value="high">Haute</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assigné à</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to">
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">Date d'échéance</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="estimated_hours" class="form-label">Temps estimé (heures)</label>
+                        <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" step="0.5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="addTask()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+function addTask() {
+    const formData = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        category_id: parseInt(document.getElementById('category_id').value),
+        priority: document.getElementById('priority').value,
+        assigned_to: parseInt(document.getElementById('assigned_to').value),
+        due_date: document.getElementById('due_date').value,
+        estimated_hours: document.getElementById('estimated_hours').value
+    };
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    fetch('/tasks/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('taskModal'));
+            modal.hide();
+            
+            // Rafraîchir la page
+            window.location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Une erreur est survenue lors de l'ajout de la tâche");
+    });
+}
+
+function editTask(taskId) {
+    fetch(`/tasks/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('title').value = data.title;
+            document.getElementById('description').value = data.description;
+            document.getElementById('category_id').value = data.category_id;
+            document.getElementById('priority').value = data.priority;
+            document.getElementById('assigned_to').value = data.assigned_to;
+            document.getElementById('due_date').value = data.due_date;
+            document.getElementById('estimated_hours').value = data.estimated_hours;
+            
+            // Changer le titre du modal et le texte du bouton
+            document.querySelector('#taskModal .modal-title').textContent = 'Modifier la tâche';
+            document.querySelector('#taskModal .btn-primary').setAttribute('onclick', `updateTask(${taskId})`);
+            
+            // Afficher le modal
+            new bootstrap.Modal(document.getElementById('taskModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors du chargement de la tâche');
+        });
+}
+
+function updateTask(taskId) {
+    const formData = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        category_id: parseInt(document.getElementById('category_id').value),
+        priority: document.getElementById('priority').value,
+        assigned_to: parseInt(document.getElementById('assigned_to').value),
+        due_date: document.getElementById('due_date').value,
+        estimated_hours: document.getElementById('estimated_hours').value
+    };
+
+    fetch(`/tasks/${taskId}/edit`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('taskModal'));
+            modal.hide();
+            window.location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Une erreur est survenue lors de la modification de la tâche");
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de Sortable pour chaque liste de tâches
+    document.querySelectorAll('.task-list').forEach(list => {
+        new Sortable(list, {
+            group: 'tasks',
+            animation: 150,
+            ghostClass: 'ghost',
+            chosenClass: 'chosen',
+            dragClass: 'drag',
+            onStart: function() {
+                document.querySelectorAll('.task-list').forEach(el => {
+                    el.classList.add('highlight-dropzone');
+                });
+            },
+            onEnd: function(evt) {
+                document.querySelectorAll('.task-list').forEach(el => {
+                    el.classList.remove('highlight-dropzone');
+                });
+
+                const taskId = evt.item.getAttribute('data-id');
+                const newStatus = evt.to.getAttribute('data-status');
+                updateTaskStatus(taskId, newStatus);
+            }
+        });
+    });
+
+    // Mise à jour des compteurs
+    updateCounters();
+});
+
+function updateTaskStatus(taskId, status) {
+    fetch(`/tasks/${taskId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateCounters();
+        } else {
+            alert(data.message);
+            window.location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la mise à jour du statut');
+        window.location.reload();
+    });
+}
+
+function updateCounters() {
+    document.querySelector('.todo-count').textContent = 
+        document.querySelector('[data-status="todo"]').children.length;
+    document.querySelector('.in-progress-count').textContent = 
+        document.querySelector('[data-status="in_progress"]').children.length;
+    document.querySelector('.done-count').textContent = 
+        document.querySelector('[data-status="done"]').children.length;
+}
+
+function deleteTask(taskId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+        fetch(`/tasks/${taskId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la suppression de la tâche');
+        });
+    }
+}
+
+// Réinitialiser le formulaire et les handlers quand le modal est fermé
+document.getElementById('taskModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('taskForm').reset();
+    document.querySelector('#taskModal .modal-title').textContent = 'Nouvelle tâche';
+    document.querySelector('#taskModal .btn-primary').setAttribute('onclick', 'addTask()');
+});
+</script>
+
+<style>
+.task-list {
+    min-height: 100px;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.ghost {
+    opacity: 0.5;
+    background: #c8ebfb;
+}
+
+.chosen {
+    background-color: #e9ecef;
+}
+
+.drag {
+    opacity: 0.99;
+}
+
+.highlight-dropzone {
+    background-color: #e2e6ea;
+    border: 2px dashed #6c757d;
+}
+
+.card {
+    margin-bottom: 20px;
+}
+
+.task-card {
+    margin-bottom: 10px;
+    cursor: grab;
+}
+
+.task-card:active {
+    cursor: grabbing;
+}
+</style>
+{% endblock %}

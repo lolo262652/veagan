@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}Edit{% else %}Add{% endif %} Product{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if product %}Edit{% else %}Add{% endif %} Product</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Product Name</label>
+                                <input type="text" class="form-control" name="name" value="{{ product.name if product else '' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category</label>
+                                <select class="form-control" name="category_id" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="3">{{ product.description if product else '' }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" name="price" step="0.01" value="{{ product.price if product else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Stock</label>
+                                <input type="number" class="form-control" name="stock" value="{{ product.stock if product else '0' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">SKU</label>
+                                <input type="text" class="form-control" name="sku" value="{{ product.sku if product else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Barcode</label>
+                                <input type="text" class="form-control" name="barcode" value="{{ product.barcode if product else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Weight</label>
+                                <input type="number" class="form-control" name="weight" step="0.01" value="{{ product.weight if product else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Unit</label>
+                                <select class="form-control" name="unit">
+                                    <option value="">Select Unit</option>
+                                    <option value="g" {% if product and product.unit == 'g' %}selected{% endif %}>Grams (g)</option>
+                                    <option value="kg" {% if product and product.unit == 'kg' %}selected{% endif %}>Kilograms (kg)</option>
+                                    <option value="piece" {% if product and product.unit == 'piece' %}selected{% endif %}>Piece</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Supplier</label>
+                                <select class="form-control" name="supplier_id">
+                                    <option value="">Select Supplier</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.id }}" {% if product and product.supplier_id == supplier.id %}selected{% endif %}>
+                                        {{ supplier.company_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Product Image</label>
+                                <input type="file" class="form-control" name="image" accept="image/*">
+                                {% if product and product.image_path %}
+                                <div class="mt-2">
+                                    <img src="{{ url_for('static', filename=product.image_path) }}" alt="Current image" class="img-thumbnail" style="height: 100px;">
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="active" id="active" 
+                                           {% if product is not defined or product.active %}checked{% endif %}>
+                                    <label class="form-check-label" for="active">Active Product</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Save Product</button>
+                                <a href="{{ url_for('products') }}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

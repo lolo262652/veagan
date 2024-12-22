@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=lolo
+      - MYSQL_PASSWORD=lolo
+      - MYSQL_DATABASE=vegan_db
+      - MYSQL_PORT=3306
+      - SECRET_KEY=votre_cle_secrete_ici
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=vegan_db
+      - MYSQL_USER=lolo
+      - MYSQL_PASSWORD=lolo
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+
+volumes:
+  mysql_data:

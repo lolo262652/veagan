@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Factures{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Factures</h1>
+        <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle Facture
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Client</th>
+                            <th>Date</th>
+                            <th>Échéance</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ invoice.invoice_number }}</td>
+                            <td>{{ invoice.client.name }}</td>
+                            <td>{{ invoice.date_created.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ invoice.due_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ "%.2f"|format(invoice.total_amount) }} €</td>
+                            <td>
+                                <span class="badge {% if invoice.status == 'paid' %}bg-success
+                                      {% elif invoice.status == 'sent' %}bg-info
+                                      {% elif invoice.status == 'cancelled' %}bg-danger
+                                      {% else %}bg-warning{% endif %}">
+                                    {{ invoice.status|title }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('preview_invoice', invoice_id=invoice.id) }}" 
+                                       class="btn btn-sm btn-info" target="_blank">
+                                        <i class="bi bi-eye"></i> Aperçu
+                                    </a>
+                                    <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-download"></i> PDF
+                                    </a>
+                                    <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" 
+                                       class="btn btn-sm btn-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="confirmDelete('{{ url_for('delete_invoice', invoice_id=invoice.id) }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Êtes-vous sûr de vouloir supprimer cette facture ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(url) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const form = document.getElementById('deleteForm');
+    form.action = url;
+    modal.show();
+}
+</script>
+{% endblock %}

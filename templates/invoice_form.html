@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}{% if invoice %}Modifier{% else %}Nouvelle{% endif %} Facture{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if invoice %}Modifier{% else %}Nouvelle{% endif %} Facture</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="invoiceForm">
+                        <!-- Informations de base -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Client</label>
+                                <select class="form-select" name="client_id" required>
+                                    <option value="">Sélectionner un client</option>
+                                    {% for client in clients %}
+                                    <option value="{{ client.id }}" {% if invoice and invoice.client_id == client.id %}selected{% endif %}>
+                                        {{ client.name }} {% if client.company_name %}({{ client.company_name }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            {% if invoice %}
+                            <div class="col-md-6">
+                                <label class="form-label">Statut</label>
+                                <select class="form-select" name="status">
+                                    <option value="draft" {% if invoice.status == 'draft' %}selected{% endif %}>Brouillon</option>
+                                    <option value="sent" {% if invoice.status == 'sent' %}selected{% endif %}>Envoyée</option>
+                                    <option value="paid" {% if invoice.status == 'paid' %}selected{% endif %}>Payée</option>
+                                    <option value="cancelled" {% if invoice.status == 'cancelled' %}selected{% endif %}>Annulée</option>
+                                </select>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Date de facture</label>
+                                <input type="date" class="form-control" name="date_created" 
+                                       value="{{ invoice.date_created.strftime('%Y-%m-%d') if invoice else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Date d'échéance</label>
+                                <input type="date" class="form-control" name="due_date" 
+                                       value="{{ invoice.due_date.strftime('%Y-%m-%d') if invoice else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">TVA (%)</label>
+                                <input type="number" class="form-control" name="tax_rate" step="0.01" 
+                                       value="{{ invoice.tax_rate if invoice else company.default_tax_rate }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Articles -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Articles</h4>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                    <i class="bi bi-plus-circle"></i> Ajouter un article
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 35%">Produit</th>
+                                            <th style="width: 25%">Description</th>
+                                            <th style="width: 15%">Quantité</th>
+                                            <th style="width: 15%">Prix</th>
+                                            <th style="width: 10%"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="itemsTableBody">
+                                        {% if invoice and invoice.items %}
+                                            {% for item in invoice.items %}
+                                            <tr>
+                                                <td>{{ item.product.name }}</td>
+                                                <td>{{ item.description }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ item.unit_price }} €</td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-outline-danger" onclick="deleteRow(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                    <input type="hidden" name="product_id[]" value="{{ item.product_id }}">
+                                                    <input type="hidden" name="description[]" value="{{ item.description }}">
+                                                    <input type="hidden" name="quantity[]" value="{{ item.quantity }}">
+                                                    <input type="hidden" name="price[]" value="{{ item.unit_price }}">
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="3" 
+                                      placeholder="Notes ou conditions particulières">{{ invoice.notes if invoice else '' }}</textarea>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="text-end">
+                            <a href="{{ url_for('invoices') }}" class="btn btn-light">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter un article -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="modalForm">
+                    <div class="mb-3">
+                        <label class="form-label">Produit</label>
+                        <select class="form-select" id="modalProduct" required>
+                            <option value="">Sélectionner un produit</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.price }}" data-name="{{ product.name }}">
+                                {{ product.name }} ({{ product.price }} €)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" id="modalDescription" placeholder="Description">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantité</label>
+                        <input type="number" class="form-control" id="modalQuantity" min="1" value="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Prix unitaire (€)</label>
+                        <input type="number" class="form-control" id="modalPrice" step="0.01" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="addItemFromModal()">Ajouter</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateModalPrice() {
+    const productSelect = document.getElementById('modalProduct');
+    const priceInput = document.getElementById('modalPrice');
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    if (selectedOption.dataset.price) {
+        priceInput.value = selectedOption.dataset.price;
+    }
+}
+
+function addItemFromModal() {
+    const product = document.getElementById('modalProduct');
+    const description = document.getElementById('modalDescription');
+    const quantity = document.getElementById('modalQuantity');
+    const price = document.getElementById('modalPrice');
+    
+    if (!product.value || !quantity.value || !price.value) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        return;
+    }
+
+    const tbody = document.getElementById('itemsTableBody');
+    const newRow = document.createElement('tr');
+    
+    newRow.innerHTML = `
+        <td>
+            ${product.options[product.selectedIndex].text}
+            <input type="hidden" name="product_id[]" value="${product.value}">
+        </td>
+        <td>
+            ${description.value}
+            <input type="hidden" name="description[]" value="${description.value}">
+        </td>
+        <td>
+            ${quantity.value}
+            <input type="hidden" name="quantity[]" value="${quantity.value}">
+        </td>
+        <td>
+            ${price.value} €
+            <input type="hidden" name="price[]" value="${price.value}">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(newRow);
+    
+    document.getElementById('modalForm').reset();
+    bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
+}
+
+function deleteRow(button) {
+    button.closest('tr').remove();
+}
+
+// Validation du formulaire
+document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+    const tbody = document.getElementById('itemsTableBody');
+    if (tbody.children.length === 0) {
+        e.preventDefault();
+        alert('Veuillez ajouter au moins un article à la facture');
+    }
+});
+</script>
+{% endblock %}

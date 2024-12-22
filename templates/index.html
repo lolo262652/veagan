@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1>Bienvenue sur Vegan</h1>
+    {% if current_user.is_authenticated %}
+        <p class="lead">Bonjour {{ current_user.username }} !</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Accéder au Dashboard</a>
+    {% else %}
+        <p class="lead">Connectez-vous ou inscrivez-vous pour commencer</p>
+        <div class="mt-4">
+            <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Connexion</a>
+            <a href="{{ url_for('register') }}" class="btn btn-success">Inscription</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
